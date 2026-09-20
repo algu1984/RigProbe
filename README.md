@@ -41,4 +41,4 @@ npm run typecheck
 npm test
 ```
 
-Demo Page https://hwinfo.web.app/
+[Demo Page](https://hwinfo.web.app/)
