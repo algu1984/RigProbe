@@ -22,6 +22,19 @@ export interface GpuInfo {
   vendor: DetectedValue<string>;
   webglVersion: DetectedValue<string>;
   maxTextureSize: DetectedValue<number>;
+  shadingLanguageVersion: DetectedValue<string>;
+  maxCubeMapTextureSize: DetectedValue<number>;
+  maxRenderbufferSize: DetectedValue<number>;
+  maxViewportDimensions: DetectedValue<[number, number]>;
+  maxCombinedTextureUnits: DetectedValue<number>;
+  maxVertexAttributes: DetectedValue<number>;
+  antialias: DetectedValue<boolean>;
+  extensions: DetectedValue<string[]>;
+  max3DTextureSize: DetectedValue<number>;
+  maxArrayTextureLayers: DetectedValue<number>;
+  maxSamples: DetectedValue<number>;
+  maxColorAttachments: DetectedValue<number>;
+  rendererUnmasked: DetectedValue<boolean>;
 }
 
 export interface DisplayInfo {

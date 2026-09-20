@@ -86,3 +86,14 @@ preserved. Missing optional fields are unavailable. API-reported estimates have
 
 Detection never calls requestDevice/getDevices, scans devices, downloads test data,
 or requests permissions. Some browsers expose only online status and API flags.
+
+## GPU capabilities
+
+`getGpuInfo()` reads WebGL identity, GLSL version, texture/renderbuffer/viewport
+limits, texture units, vertex attributes, context antialiasing and supported
+extension names. WebGL2 adds 3D texture size, array layers, MSAA samples and color
+attachments. These are browser-context limits, not VRAM, clocks, temperature or
+physical GPU specifications. `rendererUnmasked` indicates use of the debug renderer
+string; even this can be sanitized by the browser. Missing/blocked individual
+queries stay unavailable without discarding other readings. The temporary context
+is released after probing. No rendering benchmark runs.
