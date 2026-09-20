@@ -1,0 +1,18 @@
+README.md
+  h_9f89d000628188 58
+src/battery.ts
+  h_9f89d000628188 26,30-39,41,59-61,69
+tests/battery.test.js
+  h_9f89d000628188 61-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "d7ba611a6f5ad1aafa9aa1179c5e6141f70baf93",
+  "prompts": {},
+  "humans": {
+    "h_9f89d000628188": {
+      "author": "Alexandr Hmyriak <agmyryak@playtika.com>"
+    }
+  }
+}
