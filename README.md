@@ -43,3 +43,9 @@ npm test
 
 This repository is consumed by HWInfo as a pinned Git submodule at `lib/` and a
 local npm workspace. No npm publication is required. The package is private.
+
+`estimateMemoryCapacity(hardware, heapLimitBytes?)` explicitly opts into lightweight,
+allocation-free desktop heuristics. Its `{ value, source }` result contains an
+estimated range (`minGiB`, `maxGiB`; null maximum means open-ended). It is not an
+installed-RAM measurement or a guaranteed bound. `probe()` never runs this estimator
+and preserves the raw browser-reported `deviceMemoryGiB` separately.

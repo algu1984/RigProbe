@@ -25,3 +25,5 @@ export async function probe(): Promise<HardwareInfo> {
 }
 
 export const getHardwareInfo = probe;
+export { estimateMemoryCapacity } from './memory-estimate.js';
+export type { MemoryEstimate } from './memory-estimate.js';

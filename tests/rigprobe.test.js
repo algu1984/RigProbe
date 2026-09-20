@@ -53,3 +53,26 @@ test('GPU supports masked WebGL and blocked contexts', () => {
   globalThis.document.createElement = () => { throw new Error('Blocked'); };
   assert.deepEqual(getGpuInfo().renderer, { value: null, source: 'unavailable' });
 });
+
+test('optional memory estimate distinguishes capped API from a desktop profile', async () => {
+  const { estimateMemoryCapacity } = await import('../dist/index.js');
+  browser({ hardwareConcurrency: 16 });
+  const info = await probe();
+  const estimated = estimateMemoryCapacity(info, 4096 * 1048576);
+  assert.deepEqual(estimated, { value: { minGiB: 16, maxGiB: 32 }, source: 'estimated' });
+  assert.deepEqual(info.memory.deviceMemoryGiB, { value: 8, source: 'reported' });
+  assert.equal(estimateMemoryCapacity(info).value, null);
+  info.runtime.mobile = { value: true, source: 'reported' };
+  assert.equal(estimateMemoryCapacity(info, 4096 * 1048576).value, null);
+});
+
+test('Apple desktop profiles remain estimates and do not classify iPads as desktops', async () => {
+  const { estimateMemoryCapacity } = await import('../dist/index.js');
+  browser();
+  const info = await probe();
+  info.gpu.renderer = { value: 'ANGLE (Apple, Apple M1 Pro, Metal)', source: 'reported' };
+  assert.deepEqual(estimateMemoryCapacity(info), { value: { minGiB: 16, maxGiB: null }, source: 'estimated' });
+  info.runtime.platform.value = 'MacIntel';
+  info.runtime.touchPoints.value = 5;
+  assert.equal(estimateMemoryCapacity(info).source, 'unavailable');
+});
