@@ -1,3 +1,4 @@
+import { getBatteryInfo } from "./battery.js";
 import { getCpuInfo } from "./cpu.js";
 import { getMemoryInfo } from "./memory.js";
 import { getGpuInfo } from "./gpu.js";
@@ -13,10 +14,11 @@ export { getDisplayInfo } from "./display.js";
 export { getRuntimeInfo } from "./runtime.js";
 
 export async function probe(): Promise<HardwareInfo> {
-  const [cpu] = await Promise.all([getCpuInfo()]);
+  const [cpu, battery] = await Promise.all([getCpuInfo(), getBatteryInfo()]);
 
   return {
     cpu,
+    battery,
     memory: getMemoryInfo(),
     gpu: getGpuInfo(),
     display: getDisplayInfo(),
@@ -27,3 +29,4 @@ export async function probe(): Promise<HardwareInfo> {
 export const getHardwareInfo = probe;
 export { estimateMemoryCapacity } from './memory-estimate.js';
 export type { MemoryEstimate } from './memory-estimate.js';
+export { getBatteryInfo, watchBatteryInfo } from "./battery.js";

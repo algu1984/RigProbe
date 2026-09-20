@@ -30,6 +30,10 @@
     "./runtime": {
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
+    },
+    "./battery": {
+      "types": "./dist/battery.d.ts",
+      "import": "./dist/battery.js"
     }
   },
   "files": [
@@ -38,7 +42,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test tests/rigprobe.test.js"
+    "test": "npm run build && node --test tests/*.test.js"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

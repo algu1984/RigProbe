@@ -39,7 +39,16 @@ export interface RuntimeInfo {
   userAgent: DetectedValue<string>;
 }
 
+export interface BatteryInfo {
+  /** Fraction from 0 to 1; null when unavailable. */
+  level: DetectedValue<number>;
+  charging: DetectedValue<boolean>;
+  chargingTimeSeconds: DetectedValue<number>;
+  dischargingTimeSeconds: DetectedValue<number>;
+}
+
 export interface HardwareInfo {
+  battery: BatteryInfo;
   cpu: CpuInfo;
   memory: MemoryInfo;
   gpu: GpuInfo;

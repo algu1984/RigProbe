@@ -48,3 +48,22 @@ allocation-free desktop heuristics. Its `{ value, source }` result contains an
 estimated range (`minGiB`, `maxGiB`; null maximum means open-ended). It is not an
 installed-RAM measurement or a guaranteed bound. `probe()` never runs this estimator
 and preserves the raw browser-reported `deviceMemoryGiB` separately.
+
+## Battery
+
+`probe()` includes a `battery` snapshot. `getBatteryInfo()` is also available from
+`rigprobe` or `rigprobe/battery`. Fields are `level` (0–1), `charging`,
+`chargingTimeSeconds`, and `dischargingTimeSeconds`, each strictly `{ value, source }`.
+Missing, blocked or stalled APIs return unavailable values. Infinite/invalid time
+estimates become `null`; a valid zero is preserved. Acquisition times out after 1.5 seconds.
+
+```ts
+import { watchBatteryInfo } from 'rigprobe/battery';
+const stop = watchBatteryInfo(battery => console.log(battery));
+// On component teardown:
+stop();
+```
+
+The subscription emits an initial snapshot and listens to all four battery events,
+without polling. It can be cancelled even before the API resolves. Browser values
+can be defaults (100%, charging); they do not prove a physical battery is present.
