@@ -33,3 +33,6 @@ export { estimateMemoryCapacity } from './memory-estimate.js';
 export type { MemoryEstimate } from './memory-estimate.js';
 export { getBatteryInfo, watchBatteryInfo } from "./battery.js";
 export { getNetworkInfo, watchNetworkInfo } from "./network.js";
+
+export { getVideoCodecInfo } from "./video.js";
+export type { VideoCodecInfo } from "./video.js";

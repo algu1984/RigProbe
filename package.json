@@ -38,6 +38,10 @@
     "./network": {
       "types": "./dist/network.d.ts",
       "import": "./dist/network.js"
+    },
+    "./video": {
+      "types": "./dist/video.d.ts",
+      "import": "./dist/video.js"
     }
   },
   "files": [

@@ -97,3 +97,16 @@ physical GPU specifications. `rendererUnmasked` indicates use of the debug rende
 string; even this can be sanitized by the browser. Missing/blocked individual
 queries stay unavailable without discarding other readings. The temporary context
 is released after probing. No rendering benchmark runs.
+
+### Video decoding capabilities
+
+`getVideoCodecInfo()` (also exported from `rigprobe/video`) checks eight fixed
+H.264, HEVC, VP8, VP9 and AV1 profiles at 1920×1080, 30 fps, 5 Mbps, SDR.
+Call separately from `probe()`. It returns each exact configuration plus
+`supported`, `smooth` and `powerEfficient` as `{ value, source }`.
+Unavailable APIs, rejected queries and a 1.5-second timeout return null values.
+No playback, media downloads, permissions or allocation benchmarks are used.
+
+`powerEfficient` is a browser prediction, **not proof of hardware decoding**.
+A result applies only to that codec profile, container and configuration, not
+all resolutions, HDR or encoding. See the [Media Capabilities specification](https://www.w3.org/TR/media-capabilities/).
