@@ -47,7 +47,21 @@ export interface BatteryInfo {
   dischargingTimeSeconds: DetectedValue<number>;
 }
 
+export interface NetworkInfo {
+  online: DetectedValue<boolean>;
+  connectionType: DetectedValue<string>;
+  /** Browser quality class, not the cellular generation. */
+  effectiveType: DetectedValue<string>;
+  rttMs: DetectedValue<number>;
+  downlinkMbps: DetectedValue<number>;
+  saveData: DetectedValue<boolean>;
+  /** API exposure only: no discovery or permission requests. */
+  bluetoothApi: DetectedValue<boolean>;
+  usbApi: DetectedValue<boolean>;
+}
+
 export interface HardwareInfo {
+  network: NetworkInfo;
   battery: BatteryInfo;
   cpu: CpuInfo;
   memory: MemoryInfo;

@@ -1,3 +1,4 @@
+import { getNetworkInfo } from "./network.js";
 import { getBatteryInfo } from "./battery.js";
 import { getCpuInfo } from "./cpu.js";
 import { getMemoryInfo } from "./memory.js";
@@ -18,6 +19,7 @@ export async function probe(): Promise<HardwareInfo> {
 
   return {
     cpu,
+    network: getNetworkInfo(),
     battery,
     memory: getMemoryInfo(),
     gpu: getGpuInfo(),
@@ -30,3 +32,4 @@ export const getHardwareInfo = probe;
 export { estimateMemoryCapacity } from './memory-estimate.js';
 export type { MemoryEstimate } from './memory-estimate.js';
 export { getBatteryInfo, watchBatteryInfo } from "./battery.js";
+export { getNetworkInfo, watchNetworkInfo } from "./network.js";

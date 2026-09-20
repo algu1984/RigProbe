@@ -34,6 +34,10 @@
     "./battery": {
       "types": "./dist/battery.d.ts",
       "import": "./dist/battery.js"
+    },
+    "./network": {
+      "types": "./dist/network.d.ts",
+      "import": "./dist/network.js"
     }
   },
   "files": [
