@@ -1,0 +1,61 @@
+{
+  "name": "rigprobe",
+  "version": "0.1.0",
+  "description": "Lightweight, transparent browser hardware and capability detection.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cpu": {
+      "types": "./dist/cpu.d.ts",
+      "import": "./dist/cpu.js"
+    },
+    "./memory": {
+      "types": "./dist/memory.d.ts",
+      "import": "./dist/memory.js"
+    },
+    "./gpu": {
+      "types": "./dist/gpu.d.ts",
+      "import": "./dist/gpu.js"
+    },
+    "./display": {
+      "types": "./dist/display.d.ts",
+      "import": "./dist/display.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test tests/rigprobe.test.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "keywords": [
+    "hardware",
+    "browser",
+    "device",
+    "cpu",
+    "gpu",
+    "memory",
+    "capabilities"
+  ],
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/algu1984/RigProbe.git"
+  }
+}
