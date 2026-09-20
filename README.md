@@ -41,5 +41,4 @@ npm run typecheck
 npm test
 ```
 
-This repository is consumed by HWInfo as a pinned Git submodule at `lib/` and a
-local npm workspace. No npm publication is required. The package is private.
+Demo Page https://hwinfo.web.app/
