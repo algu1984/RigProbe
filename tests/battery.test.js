@@ -58,3 +58,16 @@ test('disposing before resolution prevents late callbacks and listeners', async 
   const stop=watchBatteryInfo(()=>count++);stop();resolve(battery);await flush();
   battery.dispatchEvent(new Event('levelchange'));assert.equal(count,0);
 });
+
+test('subscription recovers when the battery response arrives after the snapshot timeout', async () => {
+  const battery=manager();let resolve;const updates=[];
+  setNavigator({getBattery:()=>new Promise(r=>resolve=r)});
+  const stop=watchBatteryInfo(info=>updates.push(info));
+  await new Promise(r=>setTimeout(r,1550));
+  assert.equal(updates.at(-1).level.value,null);
+  resolve(battery);await flush();
+  assert.equal(updates.at(-1).level.value,.72);
+  battery.level=.94;battery.dispatchEvent(new Event('levelchange'));
+  assert.equal(updates.at(-1).level.value,.94);
+  stop();
+});

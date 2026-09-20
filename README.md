@@ -55,7 +55,7 @@ and preserves the raw browser-reported `deviceMemoryGiB` separately.
 `rigprobe` or `rigprobe/battery`. Fields are `level` (0–1), `charging`,
 `chargingTimeSeconds`, and `dischargingTimeSeconds`, each strictly `{ value, source }`.
 Missing, blocked or stalled APIs return unavailable values. Infinite/invalid time
-estimates become `null`; a valid zero is preserved. Acquisition times out after 1.5 seconds.
+estimates become `null`; a valid zero is preserved. Snapshots time out after 1.5 seconds; subscriptions still accept late responses.
 
 ```ts
 import { watchBatteryInfo } from 'rigprobe/battery';

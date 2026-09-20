@@ -23,19 +23,24 @@ function snapshot(manager: BatteryManager | null): BatteryInfo {
   };
 }
 
-async function getManager(): Promise<BatteryManager | null> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
+async function requestManager(): Promise<BatteryManager | null> {
   try {
     if (typeof navigator === 'undefined') return null;
     const nav = navigator as Navigator & { getBattery?: () => Promise<BatteryManager> };
-    if (typeof nav.getBattery !== 'function') return null;
-    // A blocked or stalled optional API must not hold up the hardware report.
-    return await Promise.race([
-      nav.getBattery(),
-      new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 1500); })
-    ]);
+    return typeof nav.getBattery === 'function' ? await nav.getBattery() : null;
   } catch {
     return null;
+  }
+}
+
+async function getManager(): Promise<BatteryManager | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // A snapshot is bounded, but subscriptions still accept a late API response.
+    return await Promise.race([
+      requestManager(),
+      new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 1500); })
+    ]);
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
@@ -51,7 +56,9 @@ export function watchBatteryInfo(onChange: (info: BatteryInfo) => void): () => v
   let stopped = false;
   let manager: BatteryManager | null = null;
   const update = () => { if (!stopped) onChange(snapshot(manager)); };
-  void getManager().then(result => {
+  const timer = setTimeout(update, 1500);
+  void requestManager().then(result => {
+    clearTimeout(timer);
     if (stopped) return;
     manager = result;
     for (const event of events) manager?.addEventListener(event, update);
@@ -59,6 +66,7 @@ export function watchBatteryInfo(onChange: (info: BatteryInfo) => void): () => v
   });
   return () => {
     stopped = true;
+    clearTimeout(timer);
     for (const event of events) manager?.removeEventListener(event, update);
     manager = null;
   };
