@@ -1,0 +1,25 @@
+README.md
+  s_88a3b44b7e2e25::t_921d19761f80e5 46-51
+src/index.ts
+  s_88a3b44b7e2e25::t_57668c03c2f4fb 28-29
+src/memory-estimate.ts
+  s_88a3b44b7e2e25::t_3e3d25e6a91049 1-37
+tests/rigprobe.test.js
+  s_88a3b44b7e2e25::t_5930e80262efd6 56-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "67ca35615c06663e37eaa5eea568326e1679abc4",
+  "prompts": {},
+  "sessions": {
+    "s_88a3b44b7e2e25": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0bdab-37b3-7030-b35d-57c7eed636ae",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Alexandr Hmyriak <agmyryak@playtika.com>"
+    }
+  }
+}
