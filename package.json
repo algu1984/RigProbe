@@ -42,6 +42,14 @@
     "./video": {
       "types": "./dist/video.d.ts",
       "import": "./dist/video.js"
+    },
+    "./screens": {
+      "types": "./dist/screens.d.ts",
+      "import": "./dist/screens.js"
+    },
+    "./runtime-details": {
+      "types": "./dist/runtime-details.d.ts",
+      "import": "./dist/runtime-details.js"
     }
   },
   "files": [

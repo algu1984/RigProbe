@@ -36,3 +36,6 @@ export { getNetworkInfo, watchNetworkInfo } from "./network.js";
 
 export { getVideoCodecInfo } from "./video.js";
 export type { VideoCodecInfo } from "./video.js";
+
+export * from "./screens.js";
+export * from "./runtime-details.js";

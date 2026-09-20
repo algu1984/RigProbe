@@ -110,3 +110,22 @@ No playback, media downloads, permissions or allocation benchmarks are used.
 `powerEfficient` is a browser prediction, **not proof of hardware decoding**.
 A result applies only to that codec profile, container and configuration, not
 all resolutions, HDR or encoding. See the [Media Capabilities specification](https://www.w3.org/TR/media-capabilities/).
+
+### Monitors and platform details
+
+`supportsScreenDetails()` checks API exposure without requesting access.
+Call `watchScreensInfo(callback)` **from a user action** to request browser
+window-management permission. It returns a disposer immediately and reports
+`{ status, screens }` with available/unsupported/denied/error states.
+Each monitor exposes label, internal/primary/current flags, CSS dimensions and
+coordinates, available work area, pixel ratio and color depth as `{ value, source }`.
+The current-screen flag is derived by identity; other values are browser reports.
+The subscription follows monitor connection, disconnection, geometry and current
+screen changes. Dispose on pagehide; request again to reconnect. Labels may be
+generic or empty, and CSS dimensions are not physical panel resolution.
+
+`getRuntimeDetails()` returns platformVersion, model, formFactors, architecture,
+bitness and wow64 from Client Hints, bounded to 1.5 seconds. Missing values stay
+null. Windows platformVersion is a platform API version, not the Windows release
+or build number. No UA-based model/version guessing is performed. Both APIs are
+optional and separate from `probe()`.
