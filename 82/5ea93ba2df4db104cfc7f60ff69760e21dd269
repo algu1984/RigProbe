@@ -1,0 +1,24 @@
+README.md
+  h_9f89d000628188 70-88
+package.json
+  h_9f89d000628188 37-40
+src/index.ts
+  h_9f89d000628188 1,22,35
+src/network.ts
+  h_9f89d000628188 1-63
+src/types.ts
+  h_9f89d000628188 50-62,64
+tests/network.test.js
+  h_9f89d000628188 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "825ea93ba2df4db104cfc7f60ff69760e21dd269",
+  "prompts": {},
+  "humans": {
+    "h_9f89d000628188": {
+      "author": "Alexandr Hmyriak <agmyryak@playtika.com>"
+    }
+  }
+}
