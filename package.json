@@ -50,6 +50,10 @@
     "./runtime-details": {
       "types": "./dist/runtime-details.d.ts",
       "import": "./dist/runtime-details.js"
+    },
+    "./webgpu": {
+      "types": "./dist/webgpu.d.ts",
+      "import": "./dist/webgpu.js"
     }
   },
   "files": [

@@ -39,3 +39,5 @@ export type { VideoCodecInfo } from "./video.js";
 
 export * from "./screens.js";
 export * from "./runtime-details.js";
+
+export * from "./webgpu.js";

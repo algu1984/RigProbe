@@ -9,7 +9,7 @@ Explore the hardware and capabilities your browser reports, with a dashboard pow
 ## What it detects
 
 - **CPU and memory:** logical threads, architecture, bitness, WebAssembly SIMD support and browser-reported memory class.
-- **Graphics and video:** GPU renderer, WebGL capabilities and video decoding support.
+- **Graphics and video:** GPU renderer, WebGL and WebGPU capabilities and video decoding support.
 - **Displays:** screen dimensions, pixel ratio and, with permission, details and live updates for multiple monitors.
 - **System and connectivity:** platform details, device model when available, network estimates, Bluetooth and USB API availability.
 - **Battery:** charge level, charging state and reported time estimates.
@@ -32,6 +32,7 @@ Every detected value uses the same shape: `{ value, source }`. Missing informati
 
 Optional APIs extend the basic snapshot:
 
+- `getWebGpuInfo()` — default WebGPU adapter details, features and browser limits.
 - `getVideoCodecInfo()` — video playback, smoothness and power-efficiency predictions.
 - `getRuntimeDetails()` — additional platform and device information.
 - `watchBatteryInfo()` and `watchNetworkInfo()` — live updates.
