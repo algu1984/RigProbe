@@ -1,0 +1,27 @@
+README.md
+  s_88a3b44b7e2e25::t_cac92b3f52d18c 12,35
+package.json
+  s_88a3b44b7e2e25::t_d5708e8bd958da 53-56
+src/index.ts
+  s_88a3b44b7e2e25::t_dccfd1e5dffe28 42-43
+src/webgpu.ts
+  s_88a3b44b7e2e25::t_6033cc55b8f680 1-67
+tests/webgpu.test.js
+  s_88a3b44b7e2e25::t_7a7bb1b89ee85e 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "81c6bb2327327e367da68fe75048dc93a4f9c7c2",
+  "prompts": {},
+  "sessions": {
+    "s_88a3b44b7e2e25": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0bdab-37b3-7030-b35d-57c7eed636ae",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Alexandr Hmyriak <agmyryak@playtika.com>"
+    }
+  }
+}
