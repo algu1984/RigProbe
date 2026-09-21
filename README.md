@@ -1,131 +1,59 @@
 # RigProbe
 
-Lightweight, transparent browser hardware and capability detection.
+A lightweight TypeScript library for browser hardware and capability detection. RigProbe brings together information exposed by browser APIs and identifies the source of each value, without running heavy benchmarks.
 
-RigProbe prefers browser-reported facts and small deterministic capability checks. It does not run heavy benchmarks or large memory-allocation probes as part of normal detection.
+**[HardwareInfo — see RigProbe in your browser](https://hwinfo.web.app/)**
+
+Explore the hardware and capabilities your browser reports, with a dashboard powered by RigProbe.
+
+## What it detects
+
+- **CPU and memory:** logical threads, architecture, bitness, WebAssembly SIMD support and browser-reported memory class.
+- **Graphics and video:** GPU renderer, WebGL capabilities and video decoding support.
+- **Displays:** screen dimensions, pixel ratio and, with permission, details and live updates for multiple monitors.
+- **System and connectivity:** platform details, device model when available, network estimates, Bluetooth and USB API availability.
+- **Battery:** charge level, charging state and reported time estimates.
 
 ## Usage
+
+The package is developed in this repository and is not published to npm. Build it locally and link it into your project before importing it.
 
 ```ts
 import { probe } from "rigprobe";
 
 const hardware = await probe();
-console.log(hardware);
+console.log(hardware.cpu.logicalThreads);
+// { value: 8, source: "reported" }
 ```
 
-Focused imports are also available:
+Every detected value uses the same shape: `{ value, source }`. Missing information has `value: null` and `source: "unavailable"`. Other sources are `reported`, `derived`, `measured` and `estimated`.
 
-```ts
-import { getGpuInfo } from "rigprobe/gpu";
-import { getMemoryInfo } from "rigprobe/memory";
-```
+`probe()` returns CPU, memory, GPU, display, runtime, battery and network information. Individual detectors are also available through focused imports such as `rigprobe/gpu`.
 
-Every detected value contains only the value and its provenance:
+Optional APIs extend the basic snapshot:
 
-```ts
-{
-  value: 16,
-  source: "reported"
-}
-```
+- `getVideoCodecInfo()` — video playback, smoothness and power-efficiency predictions.
+- `getRuntimeDetails()` — additional platform and device information.
+- `watchBatteryInfo()` and `watchNetworkInfo()` — live updates.
+- `watchScreensInfo()` — live monitor details; call from a user action to request permission.
 
-Sources are `reported`, `derived`, `measured`, `estimated`, or `unavailable`.
+Each watcher returns a function to stop listening.
 
-The initial package intentionally contains no heavy heuristics. Experimental estimators and benchmarks should live behind explicit opt-in APIs.
+## Browser limits
+
+Availability depends on the browser, permissions and privacy settings. Reported values may be rounded, capped or hidden: memory class is not installed RAM, and power-efficient video decoding does not confirm hardware acceleration. RigProbe keeps unavailable values explicit rather than inventing hardware specifications.
+
+Basic detection does not request permissions or run heavy probes. The optional memory estimator is an explicit opt-in and is never part of `probe()`.
 
 ## Development
 
 ```sh
 npm ci
+npm run build
 npm run typecheck
 npm test
 ```
 
-[Demo Page](https://hwinfo.web.app/)
+## License
 
-`estimateMemoryCapacity(hardware, heapLimitBytes?)` explicitly opts into lightweight,
-allocation-free desktop heuristics. Its `{ value, source }` result contains an
-estimated range (`minGiB`, `maxGiB`; null maximum means open-ended). It is not an
-installed-RAM measurement or a guaranteed bound. `probe()` never runs this estimator
-and preserves the raw browser-reported `deviceMemoryGiB` separately.
-
-## Battery
-
-`probe()` includes a `battery` snapshot. `getBatteryInfo()` is also available from
-`rigprobe` or `rigprobe/battery`. Fields are `level` (0–1), `charging`,
-`chargingTimeSeconds`, and `dischargingTimeSeconds`, each strictly `{ value, source }`.
-Missing, blocked or stalled APIs return unavailable values. Infinite/invalid time
-estimates become `null`; a valid zero is preserved. Snapshots time out after 1.5 seconds; subscriptions still accept late responses.
-
-```ts
-import { watchBatteryInfo } from 'rigprobe/battery';
-const stop = watchBatteryInfo(battery => console.log(battery));
-// On component teardown:
-stop();
-```
-
-The subscription emits an initial snapshot and listens to all four battery events,
-without polling. It can be cancelled even before the API resolves. Browser values
-can be defaults (100%, charging); they do not prove a physical battery is present.
-
-## Network and connectivity
-
-`getNetworkInfo()` and `watchNetworkInfo(callback)` are exported from `rigprobe`
-and `rigprobe/network`; `probe()` also includes `network`. The watcher emits an
-initial snapshot plus connection/online/offline changes and returns a disposer.
-All fields use `{ value, source }`. Zero RTT/downlink and `saveData: false` are
-preserved. Missing optional fields are unavailable. API-reported estimates have
-`source: reported`, identifying their provenance rather than claiming precision.
-
-- `online`: browser connectivity hint, not proof of Internet reachability.
-- `connectionType`: connection transport, if exposed.
-- `effectiveType`: quality class (slow-2g/2g/3g/4g), not cellular generation.
-- `rttMs`, `downlinkMbps`: browser estimates, not active test results.
-- `saveData`: browser reduced-data preference, not a universal OS setting.
-- `bluetoothApi`, `usbApi`: API exposure only, not connected devices or permissions.
-
-Detection never calls requestDevice/getDevices, scans devices, downloads test data,
-or requests permissions. Some browsers expose only online status and API flags.
-
-## GPU capabilities
-
-`getGpuInfo()` reads WebGL identity, GLSL version, texture/renderbuffer/viewport
-limits, texture units, vertex attributes, context antialiasing and supported
-extension names. WebGL2 adds 3D texture size, array layers, MSAA samples and color
-attachments. These are browser-context limits, not VRAM, clocks, temperature or
-physical GPU specifications. `rendererUnmasked` indicates use of the debug renderer
-string; even this can be sanitized by the browser. Missing/blocked individual
-queries stay unavailable without discarding other readings. The temporary context
-is released after probing. No rendering benchmark runs.
-
-### Video decoding capabilities
-
-`getVideoCodecInfo()` (also exported from `rigprobe/video`) checks eight fixed
-H.264, HEVC, VP8, VP9 and AV1 profiles at 1920×1080, 30 fps, 5 Mbps, SDR.
-Call separately from `probe()`. It returns each exact configuration plus
-`supported`, `smooth` and `powerEfficient` as `{ value, source }`.
-Unavailable APIs, rejected queries and a 1.5-second timeout return null values.
-No playback, media downloads, permissions or allocation benchmarks are used.
-
-`powerEfficient` is a browser prediction, **not proof of hardware decoding**.
-A result applies only to that codec profile, container and configuration, not
-all resolutions, HDR or encoding. See the [Media Capabilities specification](https://www.w3.org/TR/media-capabilities/).
-
-### Monitors and platform details
-
-`supportsScreenDetails()` checks API exposure without requesting access.
-Call `watchScreensInfo(callback)` **from a user action** to request browser
-window-management permission. It returns a disposer immediately and reports
-`{ status, screens }` with available/unsupported/denied/error states.
-Each monitor exposes label, internal/primary/current flags, CSS dimensions and
-coordinates, available work area, pixel ratio and color depth as `{ value, source }`.
-The current-screen flag is derived by identity; other values are browser reports.
-The subscription follows monitor connection, disconnection, geometry and current
-screen changes. Dispose on pagehide; request again to reconnect. Labels may be
-generic or empty, and CSS dimensions are not physical panel resolution.
-
-`getRuntimeDetails()` returns platformVersion, model, formFactors, architecture,
-bitness and wow64 from Client Hints, bounded to 1.5 seconds. Missing values stay
-null. Windows platformVersion is a platform API version, not the Windows release
-or build number. No UA-based model/version guessing is performed. Both APIs are
-optional and separate from `probe()`.
+MIT
