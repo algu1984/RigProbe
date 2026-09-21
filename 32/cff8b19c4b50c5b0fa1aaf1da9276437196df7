@@ -1,0 +1,14 @@
+README.md
+  h_9f89d000628188 3,5-15,19-20,25-26,29,31,33,35-38,40,42-46,52,57,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "32cff8b19c4b50c5b0fa1aaf1da9276437196df7",
+  "prompts": {},
+  "humans": {
+    "h_9f89d000628188": {
+      "author": "Alexandr Hmyriak <agmyryak@playtika.com>"
+    }
+  }
+}
