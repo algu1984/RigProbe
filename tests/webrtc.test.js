@@ -50,6 +50,32 @@ test('isolated STUN checks report each server and never return local addresses',
     assert.deepEqual(Object.keys(field).sort(), ['source', 'value']);
 });
 
+
+test('bracketed and bare IPv6 candidates share an address, while different ports remain distinct', async () => {
+  setPeer(class extends FakePeer {
+    async setLocalDescription() {
+      for (const [line, address] of [
+        ['candidate:1 1 udp 1 2001:db8::4 62001 typ srflx', '[2001:0db8::4]'],
+        ['candidate:2 1 udp 1 2001:db8::4 62001 typ srflx', null],
+        ['candidate:3 1 udp 1 2001:db8::4 62002 typ srflx', '[2001:db8::4]']
+      ]) {
+        this.dispatchEvent(Object.assign(new Event('icecandidate'), {
+          candidate: { ...candidate(line), address }
+        }));
+      }
+      this.iceGatheringState = 'complete';
+      this.dispatchEvent(new Event('icegatheringstatechange'));
+    }
+  });
+  const result = await getWebRtcInfo();
+  for (const server of result.servers) {
+    assert.deepEqual(server.stunAddresses.value, [
+      { address: '2001:db8::4', port: 62001, family: 'ipv6', protocol: 'udp' },
+      { address: '2001:db8::4', port: 62002, family: 'ipv6', protocol: 'udp' }
+    ]);
+  }
+});
+
 test('missing API and stalled gathering do not fabricate addresses or NAT verdicts', async () => {
   setPeer(undefined);
   const unsupported = await getWebRtcInfo();

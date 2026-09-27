@@ -38,11 +38,18 @@ function family(address: string): AddressFamily {
   if (address.toLowerCase().endsWith('.local')) return 'mdns';
   if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(address) &&
       address.split('.').every(part => Number(part) <= 255)) return 'ipv4';
-  const bare = address.replace(/%[a-z0-9_.-]+$/i, '').replace(/^\[|\]$/g, '');
+  const bare = address.replace(/^\[|\]$/g, '').replace(/%[a-z0-9_.-]+$/i, '');
   if (/^[0-9a-f:.]+$/i.test(bare) && bare.includes(':')) {
     try { new URL(`http://[${bare}]/`); return 'ipv6'; } catch { /* Not a valid IPv6 literal. */ }
   }
   return 'unknown';
+}
+
+function canonicalAddress(address: string, addressFamily: AddressFamily): string {
+  if (addressFamily !== 'ipv6') return address;
+  const bare = address.replace(/^\[|\]$/g, '').replace(/%[a-z0-9_.-]+$/i, '');
+  try { return new URL(`http://[${bare}]/`).hostname.slice(1, -1); }
+  catch { return bare.toLowerCase(); }
 }
 
 interface ParsedCandidate {
@@ -91,10 +98,12 @@ function checkServer(server: typeof servers[number], timeoutMs: number): Promise
     const collect = (item: ParsedCandidate) => {
       if (item.family === 'ipv6') ipv6Observed = true;
       if (item.type !== 'srflx' || item.family !== 'ipv4' && item.family !== 'ipv6') return;
-      if (item.relatedAddress && family(item.relatedAddress) === item.family &&
-          (item.address !== item.relatedAddress || item.relatedPort !== null && item.port !== item.relatedPort)) natObserved = true;
+      const mappedAddress = canonicalAddress(item.address, item.family);
+      const baseAddress = item.relatedAddress && canonicalAddress(item.relatedAddress, family(item.relatedAddress));
+      if (baseAddress && family(baseAddress) === item.family &&
+          (mappedAddress !== baseAddress || item.relatedPort !== null && item.port !== item.relatedPort)) natObserved = true;
       const address: WebRtcStunAddress = {
-        address: item.address, port: item.port, family: item.family, protocol: item.protocol
+        address: mappedAddress, port: item.port, family: item.family, protocol: item.protocol
       };
       if (!stunAddresses.some(existing => JSON.stringify(existing) === JSON.stringify(address))) stunAddresses.push(address);
     };
