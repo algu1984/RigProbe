@@ -1,0 +1,23 @@
+README.md
+  s_88a3b44b7e2e25::t_2a2b6c6bd3cb9a 36
+src/webrtc.ts
+  s_88a3b44b7e2e25::t_1d5c7d8f1332da 173,175
+tests/webrtc.test.js
+  s_88a3b44b7e2e25::t_f9d88310880af6 49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "c7e10924656931f46cb98998989ec140d48d09ab",
+  "prompts": {},
+  "sessions": {
+    "s_88a3b44b7e2e25": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0bdab-37b3-7030-b35d-57c7eed636ae",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Alexandr Hmyriak <agmyryak@playtika.com>"
+    }
+  }
+}
