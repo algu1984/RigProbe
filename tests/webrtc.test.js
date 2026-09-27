@@ -34,7 +34,7 @@ test('isolated STUN checks report each server and never return local addresses',
   FakePeer.peers = [];
   setPeer(FakePeer);
   setFetch(async (url, options) => {
-    assert.equal(url, 'https://api6.ipify.org/');
+    assert.equal(url, 'https://ipv6.google.com/generate_204');
     assert.equal(options.mode, 'no-cors');
     return { type: 'opaque' };
   });
@@ -85,4 +85,45 @@ test('reflexive address suggests NAT even when the browser hides its base addres
   const result = await getWebRtcInfo();
   assert.equal(result.servers[0].natObserved.value, null);
   assert.deepEqual(result.servers[0].natIndicated, { value: true, source: 'derived' });
+});
+
+test('late IPv6 candidate after gathering completion is still observed', async () => {
+  setFetch(async () => { throw new TypeError('Network blocked'); });
+  setPeer(class extends FakePeer {
+    async setLocalDescription() {
+      this.dispatchEvent(Object.assign(new Event('icecandidate'), {
+        candidate: candidate('candidate:2 1 udp 1 203.0.113.9 62000 typ srflx')
+      }));
+      this.iceGatheringState = 'complete';
+      this.dispatchEvent(new Event('icegatheringstatechange'));
+      setTimeout(() => this.dispatchEvent(Object.assign(new Event('icecandidate'), {
+        candidate: candidate('candidate:3 1 udp 1 2001:db8::7 51001 typ host')
+      })), 20);
+    }
+  });
+  const result = await getWebRtcInfo();
+  assert.ok(result.servers.every(server => server.ipv6Observed.value === true));
+  assert.equal(JSON.stringify(result).includes('2001:db8::7'), false);
+});
+
+test('candidate stats recover IPv6 hidden from events without exporting host addresses', async () => {
+  setFetch(async () => { throw new TypeError('Network blocked'); });
+  setPeer(class extends FakePeer {
+    async setLocalDescription() {
+      this.iceGatheringState = 'complete';
+      this.dispatchEvent(new Event('icegatheringstatechange'));
+    }
+    async getStats() {
+      return new Map([
+        ['host', { type: 'local-candidate', candidateType: 'host', address: '2001:db8::8', port: 51001, protocol: 'udp' }],
+        ['mapped', { type: 'local-candidate', candidateType: 'srflx', address: '203.0.113.9', port: 62000, protocol: 'udp' }]
+      ]);
+    }
+  });
+  const result = await getWebRtcInfo();
+  assert.ok(result.servers.every(server => server.status === 'complete' && server.ipv6Observed.value === true));
+  assert.deepEqual(result.servers[0].stunAddresses.value, [
+    { address: '203.0.113.9', port: 62000, family: 'ipv4', protocol: 'udp' }
+  ]);
+  assert.equal(JSON.stringify(result).includes('2001:db8::8'), false);
 });

@@ -40,7 +40,10 @@ function family(address: string): AddressFamily {
   if (address.toLowerCase().endsWith('.local')) return 'mdns';
   if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(address) &&
       address.split('.').every(part => Number(part) <= 255)) return 'ipv4';
-  if (/^[0-9a-f:]+(?:%[a-z0-9_.-]+)?$/i.test(address) && address.includes(':')) return 'ipv6';
+  const bare = address.replace(/%[a-z0-9_.-]+$/i, '').replace(/^\[|\]$/g, '');
+  if (/^[0-9a-f:.]+$/i.test(bare) && bare.includes(':')) {
+    try { new URL(`http://[${bare}]/`); return 'ipv6'; } catch { /* Not a valid IPv6 literal. */ }
+  }
   return 'unknown';
 }
 
@@ -48,7 +51,7 @@ interface ParsedCandidate {
   address: string;
   port: number | null;
   family: AddressFamily;
-  type: 'host' | 'srflx';
+  type: 'host' | 'srflx' | 'prflx';
   protocol: 'udp' | 'tcp' | null;
   relatedAddress: string | null;
   relatedPort: number | null;
@@ -57,7 +60,7 @@ interface ParsedCandidate {
 function parse(candidate: RTCIceCandidate): ParsedCandidate | null {
   const fields = candidate.candidate.trim().split(/\s+/);
   const type = candidate.type ?? fields[fields.indexOf('typ') + 1];
-  if (type !== 'host' && type !== 'srflx') return null;
+  if (type !== 'host' && type !== 'srflx' && type !== 'prflx') return null;
   const address = candidate.address ?? fields[4];
   if (!address) return null;
   const numericPort = Number(fields[5]);
@@ -86,42 +89,82 @@ function checkServer(server: typeof servers[number], timeoutMs: number): Promise
     let iceError = false;
     let peer: RTCPeerConnection | undefined;
     let settled = false;
+    let completionTimer: ReturnType<typeof setTimeout> | undefined;
+    const collect = (item: ParsedCandidate) => {
+      if (item.family === 'ipv6') ipv6Observed = true;
+      if (item.type !== 'srflx' || item.family !== 'ipv4' && item.family !== 'ipv6') return;
+      if (item.relatedAddress && family(item.relatedAddress) === item.family &&
+          (item.address !== item.relatedAddress || item.relatedPort !== null && item.port !== item.relatedPort)) natObserved = true;
+      const address: WebRtcStunAddress = {
+        address: item.address, port: item.port, family: item.family, protocol: item.protocol
+      };
+      if (!stunAddresses.some(existing => JSON.stringify(existing) === JSON.stringify(address))) stunAddresses.push(address);
+    };
     const finish = (status: WebRtcStunServerResult['status']) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      try { peer?.close(); } catch { /* The result is still useful if close fails. */ }
-      const finalStatus = status === 'complete' && stunAddresses.length === 0 ?
-        (iceError ? 'error' : 'no-address') : status;
-      resolve({
-        ...server, status: finalStatus,
-        stunAddresses: (finalStatus === 'error' || finalStatus === 'unsupported') && stunAddresses.length === 0 ? unavailable() : measured(stunAddresses),
-        ipv6Observed: ipv6Observed ? measured(true) : unavailable(),
-        natObserved: natObserved ? derived(true) : unavailable(),
-        natIndicated: stunAddresses.length ? derived(true) : unavailable()
-      });
+      clearTimeout(completionTimer);
+      void (async () => {
+        // Some browsers expose gathered candidates in stats but not in candidate events.
+        // Read them before closing, without ever returning host addresses.
+        try {
+          if (peer?.getStats) {
+            let deadline: ReturnType<typeof setTimeout> | undefined;
+            const report = await Promise.race([
+              peer.getStats(),
+              new Promise<null>(resolve => { deadline = setTimeout(() => resolve(null), 250); })
+            ]);
+            clearTimeout(deadline);
+            report?.forEach(stat => {
+              if (stat.type !== 'local-candidate') return;
+              const item = stat as RTCStats & {
+                address?: string; ip?: string; port?: number; protocol?: string;
+                candidateType?: string; relatedAddress?: string; relatedPort?: number;
+              };
+              const address = item.address ?? item.ip;
+              if (!address || !['host', 'srflx', 'prflx'].includes(item.candidateType ?? '')) return;
+              const addressFamily = family(address);
+              const protocol = item.protocol?.toLowerCase();
+              collect({ address, port: item.port ?? null, family: addressFamily,
+                type: item.candidateType as ParsedCandidate['type'],
+                protocol: protocol === 'udp' || protocol === 'tcp' ? protocol : null,
+                relatedAddress: item.relatedAddress ?? null, relatedPort: item.relatedPort ?? null });
+            });
+          }
+        } catch { /* Candidate events remain the primary source. */ }
+        try { peer?.close(); } catch { /* The result is still useful if close fails. */ }
+        const finalStatus = stunAddresses.length ? 'complete' : status === 'complete' ?
+          (iceError ? 'error' : 'no-address') : status;
+        resolve({
+          ...server, status: finalStatus,
+          stunAddresses: (finalStatus === 'error' || finalStatus === 'unsupported') && stunAddresses.length === 0 ? unavailable() : measured(stunAddresses),
+          ipv6Observed: ipv6Observed ? measured(true) : unavailable(),
+          natObserved: natObserved ? derived(true) : unavailable(),
+          natIndicated: stunAddresses.length ? derived(true) : unavailable()
+        });
+      })();
+    };
+    const scheduleCompletion = () => {
+      if (settled || completionTimer) return;
+      completionTimer = setTimeout(() => finish('complete'), 250);
     };
     const timer = setTimeout(() => finish('timeout'), Math.max(1, timeoutMs));
     try {
       peer = new RTCPeerConnection({ iceServers: [{ urls: server.url }] });
       peer.addEventListener('icecandidate', event => {
-        if (!event.candidate) { finish('complete'); return; }
+        if (!event.candidate) { scheduleCompletion(); return; }
+        clearTimeout(completionTimer);
+        completionTimer = undefined;
         try {
           const item = parse(event.candidate);
-          if (!item) return;
-          if (item.family === 'ipv6') ipv6Observed = true;
-          if (item.type !== 'srflx' || item.family !== 'ipv4' && item.family !== 'ipv6') return;
-          if (item.relatedAddress && family(item.relatedAddress) === item.family &&
-              (item.address !== item.relatedAddress || item.relatedPort !== null && item.port !== item.relatedPort)) natObserved = true;
-          const address: WebRtcStunAddress = {
-            address: item.address, port: item.port, family: item.family, protocol: item.protocol
-          };
-          if (!stunAddresses.some(existing => JSON.stringify(existing) === JSON.stringify(address))) stunAddresses.push(address);
+          if (item) collect(item);
         } catch { /* Ignore malformed or privacy-filtered candidates. */ }
+        if (peer?.iceGatheringState === 'complete') scheduleCompletion();
       });
       peer.addEventListener('icecandidateerror', () => { iceError = true; });
       peer.addEventListener('icegatheringstatechange', () => {
-        if (peer?.iceGatheringState === 'complete') finish('complete');
+        if (peer?.iceGatheringState === 'complete') scheduleCompletion();
       });
       peer.createDataChannel('address-probe');
       void (async () => { await peer!.setLocalDescription(await peer!.createOffer()); })().catch(() => finish('error'));
@@ -129,7 +172,7 @@ function checkServer(server: typeof servers[number], timeoutMs: number): Promise
   });
 }
 
-/** A successful fetch to this IPv6-only host proves browser-level IPv6 reachability.
+/** A successful fetch to Google's IPv6-only host proves browser-level IPv6 reachability.
  * Failure is inconclusive: browser policy, DNS, proxies or the service may be at fault.
  * no-cors avoids depending on the endpoint exposing its response to this origin.
  */
@@ -138,7 +181,7 @@ async function checkIpv6Reachability(timeoutMs: number): Promise<DetectedValue<b
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
   try {
-    await fetch('https://api6.ipify.org/', {
+    await fetch('https://ipv6.google.com/generate_204', {
       mode: 'no-cors', credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal
     });
     return measured(true);
