@@ -33,7 +33,7 @@ Every detected value uses the same shape: `{ value, source }`. Missing informati
 Optional APIs extend the basic snapshot:
 
 - `getWebGpuInfo()` — default WebGPU adapter details, features and browser limits.
-- `getWebRtcInfo()` — isolated Google and Cloudflare STUN checks with mapped addresses, IPv6 observation and cautious NAT evidence. Local host addresses are not returned; the servers are contacted only when this function is called.
+- `getWebRtcInfo()` — isolated Google and Cloudflare STUN checks with mapped addresses and cautious NAT evidence, plus an IPv6-only HTTPS reachability check through ipify. Local host addresses are not returned. These services are contacted only when this function is called; a failed IPv6 check is inconclusive.
 - `getVideoCodecInfo()` — video playback, smoothness and power-efficiency predictions.
 - `getRuntimeDetails()` — additional platform and device information.
 - `watchBatteryInfo()` and `watchNetworkInfo()` — live updates.
