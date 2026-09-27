@@ -17,10 +17,14 @@ export interface WebRtcStunServerResult {
   ipv6Observed: DetectedValue<boolean>;
   /** True only when a reflexive candidate exposes a different base address or port. Null is inconclusive. */
   natObserved: DetectedValue<boolean>;
+  /** True when STUN returned a reflexive mapping; suggests NAT if the base address is hidden. */
+  natIndicated: DetectedValue<boolean>;
 }
 
 export interface WebRtcInfo {
   servers: WebRtcStunServerResult[];
+  /** True only when an IPv6-only HTTPS endpoint was reachable; null means inconclusive. */
+  ipv6Reachable: DetectedValue<boolean>;
 }
 
 const servers = [
@@ -73,7 +77,7 @@ function parse(candidate: RTCIceCandidate): ParsedCandidate | null {
 
 function checkServer(server: typeof servers[number], timeoutMs: number): Promise<WebRtcStunServerResult> {
   if (typeof RTCPeerConnection === 'undefined') return Promise.resolve({
-    ...server, status: 'unsupported', stunAddresses: unavailable(), ipv6Observed: unavailable(), natObserved: unavailable()
+    ...server, status: 'unsupported', stunAddresses: unavailable(), ipv6Observed: unavailable(), natObserved: unavailable(), natIndicated: unavailable()
   });
   return new Promise(resolve => {
     const stunAddresses: WebRtcStunAddress[] = [];
@@ -93,7 +97,8 @@ function checkServer(server: typeof servers[number], timeoutMs: number): Promise
         ...server, status: finalStatus,
         stunAddresses: (finalStatus === 'error' || finalStatus === 'unsupported') && stunAddresses.length === 0 ? unavailable() : measured(stunAddresses),
         ipv6Observed: ipv6Observed ? measured(true) : unavailable(),
-        natObserved: natObserved ? derived(true) : unavailable()
+        natObserved: natObserved ? derived(true) : unavailable(),
+        natIndicated: stunAddresses.length ? derived(true) : unavailable()
       });
     };
     const timer = setTimeout(() => finish('timeout'), Math.max(1, timeoutMs));
@@ -124,7 +129,31 @@ function checkServer(server: typeof servers[number], timeoutMs: number): Promise
   });
 }
 
-/** On-demand, isolated ICE checks for each STUN server. No signaling or peer transfer. */
+/** A successful fetch to this IPv6-only host proves browser-level IPv6 reachability.
+ * Failure is inconclusive: browser policy, DNS, proxies or the service may be at fault.
+ * no-cors avoids depending on the endpoint exposing its response to this origin.
+ */
+async function checkIpv6Reachability(timeoutMs: number): Promise<DetectedValue<boolean>> {
+  if (typeof fetch === 'undefined') return unavailable();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
+  try {
+    await fetch('https://api6.ipify.org/', {
+      mode: 'no-cors', credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal
+    });
+    return measured(true);
+  } catch {
+    return unavailable();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** On-demand, isolated ICE checks and an independent IPv6-only reachability check. */
 export async function getWebRtcInfo(timeoutMs = 6000): Promise<WebRtcInfo> {
-  return { servers: await Promise.all(servers.map(server => checkServer(server, timeoutMs))) };
+  const [serverResults, ipv6Reachable] = await Promise.all([
+    Promise.all(servers.map(server => checkServer(server, timeoutMs))),
+    checkIpv6Reachability(timeoutMs)
+  ]);
+  return { servers: serverResults, ipv6Reachable };
 }
