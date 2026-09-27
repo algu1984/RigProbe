@@ -23,8 +23,6 @@ export interface WebRtcStunServerResult {
 
 export interface WebRtcInfo {
   servers: WebRtcStunServerResult[];
-  /** True only when an IPv6-only HTTPS endpoint was reachable; null means inconclusive. */
-  ipv6Reachable: DetectedValue<boolean>;
 }
 
 const servers = [
@@ -172,31 +170,7 @@ function checkServer(server: typeof servers[number], timeoutMs: number): Promise
   });
 }
 
-/** A successful fetch to Google's IPv6-only host proves browser-level IPv6 reachability.
- * Failure is inconclusive: browser policy, DNS, proxies or the service may be at fault.
- * no-cors avoids depending on the endpoint exposing its response to this origin.
- */
-async function checkIpv6Reachability(timeoutMs: number): Promise<DetectedValue<boolean>> {
-  if (typeof fetch === 'undefined') return unavailable();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
-  try {
-    await fetch('https://ipv6.google.com/generate_204', {
-      mode: 'no-cors', credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal
-    });
-    return measured(true);
-  } catch {
-    return unavailable();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** On-demand, isolated ICE checks and an independent IPv6-only reachability check. */
+/** On-demand, isolated ICE checks for each STUN server. No HTTP IP lookup. */
 export async function getWebRtcInfo(timeoutMs = 6000): Promise<WebRtcInfo> {
-  const [serverResults, ipv6Reachable] = await Promise.all([
-    Promise.all(servers.map(server => checkServer(server, timeoutMs))),
-    checkIpv6Reachability(timeoutMs)
-  ]);
-  return { servers: serverResults, ipv6Reachable };
+  return { servers: await Promise.all(servers.map(server => checkServer(server, timeoutMs))) };
 }

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { getWebRtcInfo } from '../dist/index.js';
 
 const setPeer = value => Object.defineProperty(globalThis, 'RTCPeerConnection', { configurable: true, value });
-const setFetch = value => Object.defineProperty(globalThis, 'fetch', { configurable: true, value });
 const candidate = line => ({ candidate: line, type: null, address: null, port: null, protocol: null, relatedAddress: null, relatedPort: null });
 
 class FakePeer extends EventTarget {
@@ -33,11 +32,6 @@ class FakePeer extends EventTarget {
 test('isolated STUN checks report each server and never return local addresses', async () => {
   FakePeer.peers = [];
   setPeer(FakePeer);
-  setFetch(async (url, options) => {
-    assert.equal(url, 'https://ipv6.google.com/generate_204');
-    assert.equal(options.mode, 'no-cors');
-    return { type: 'opaque' };
-  });
   const result = await getWebRtcInfo();
   assert.equal(FakePeer.peers.length, 2);
   assert.ok(FakePeer.peers.every(peer => peer.closed));
@@ -46,23 +40,20 @@ test('isolated STUN checks report each server and never return local addresses',
   assert.equal(google.status, 'complete');
   assert.deepEqual(google.natObserved, { value: true, source: 'derived' });
   assert.deepEqual(google.natIndicated, { value: true, source: 'derived' });
-  assert.deepEqual(result.ipv6Reachable, { value: true, source: 'measured' });
   assert.deepEqual(google.ipv6Observed, { value: true, source: 'measured' });
   assert.deepEqual(google.stunAddresses.value, [{ address: '203.0.113.9', port: 62000, family: 'ipv4', protocol: 'udp' }]);
   assert.equal(cloudflare.status, 'error');
   assert.equal(cloudflare.stunAddresses.value, null);
   for (const privateAddress of ['192.168.1.7', '2001:db8::7', 'browser.local'])
     assert.equal(JSON.stringify(result).includes(privateAddress), false);
-  for (const field of [google.stunAddresses, google.ipv6Observed, google.natObserved, google.natIndicated, result.ipv6Reachable])
+  for (const field of [google.stunAddresses, google.ipv6Observed, google.natObserved, google.natIndicated])
     assert.deepEqual(Object.keys(field).sort(), ['source', 'value']);
 });
 
 test('missing API and stalled gathering do not fabricate addresses or NAT verdicts', async () => {
   setPeer(undefined);
-  setFetch(async () => { throw new TypeError('Network blocked'); });
   const unsupported = await getWebRtcInfo();
   assert.ok(unsupported.servers.every(server => server.status === 'unsupported' && server.natObserved.value === null));
-  assert.deepEqual(unsupported.ipv6Reachable, { value: null, source: 'unavailable' });
   FakePeer.peers = [];
   setPeer(class extends FakePeer { async setLocalDescription() {} });
   const timeout = await getWebRtcInfo(10);
@@ -72,7 +63,6 @@ test('missing API and stalled gathering do not fabricate addresses or NAT verdic
 
 
 test('reflexive address suggests NAT even when the browser hides its base address', async () => {
-  setFetch(async () => { throw new TypeError('Network blocked'); });
   setPeer(class extends FakePeer {
     async setLocalDescription() {
       this.dispatchEvent(Object.assign(new Event('icecandidate'), {
@@ -88,7 +78,6 @@ test('reflexive address suggests NAT even when the browser hides its base addres
 });
 
 test('late IPv6 candidate after gathering completion is still observed', async () => {
-  setFetch(async () => { throw new TypeError('Network blocked'); });
   setPeer(class extends FakePeer {
     async setLocalDescription() {
       this.dispatchEvent(Object.assign(new Event('icecandidate'), {
@@ -107,7 +96,6 @@ test('late IPv6 candidate after gathering completion is still observed', async (
 });
 
 test('candidate stats recover IPv6 hidden from events without exporting host addresses', async () => {
-  setFetch(async () => { throw new TypeError('Network blocked'); });
   setPeer(class extends FakePeer {
     async setLocalDescription() {
       this.iceGatheringState = 'complete';
